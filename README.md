@@ -1,147 +1,237 @@
-# Space Engineers Plugin Template
+# Space Engineers Plugin Template - Code Tester
 
-[Client only version of the template](https://github.com/sepluginloader/ClientPluginTemplate)
+A comprehensive template project for developing Space Engineers plugins that work with both the client game and dedicated servers. This project demonstrates best practices for plugin development including Harmony patching, configuration management, UI generation, and code verification.
+
+## Features
+
+- **Multi-Target Support**: Supports Client, Dedicated Server, and Torch server environments
+- **Harmony Integration**: Advanced patching capabilities with code verification
+- **Dynamic UI Generation**: Automatic settings screen generation from configuration properties
+- **Configuration Management**: Persistent configuration with type-safe access
+- **Code Change Detection**: Runtime verification to detect conflicting game updates
+- **Comprehensive Logging**: Structured logging with multiple severity levels
+- **Example Implementations**: Complete examples of patches, transpilers, and UI elements
+
+## Project Structure
+
+```
+SE_Code_Tester/
+├── Code_tester.sln              # Main solution file
+├── Directory.Build.props        # MSBuild properties (game paths)
+├── ClientPlugin/                # Client-side plugin
+│   ├── Plugin.cs               # Main plugin entry point
+│   ├── Config.cs               # Client configuration with UI attributes
+│   ├── Settings/               # UI generation framework
+│   └── deploy.bat              # Deployment script
+├── DedicatedPlugin/            # Dedicated server plugin
+│   ├── Plugin.cs               # Server plugin entry point
+│   └── deploy.bat              # Deployment script
+└── Shared/                     # Common code between projects
+    ├── Config/                 # Configuration framework
+    ├── Logging/                # Logging infrastructure
+    ├── Patches/                # Example patches and helpers
+    ├── Plugin/                 # Common plugin interfaces
+    └── Tools/                  # Utility classes and helpers
+```
 
 ## Prerequisites
 
-- [Space Engineers](https://store.steampowered.com/app/244850/Space_Engineers/)
-- [Python 3.x](https://python.org) (tested with 3.9)
-- [Plugin Loader](https://github.com/sepluginloader)
-- [Torch Server](https://torchapi.com/) in `C:\Torch`, run `Torch.Server.exe` once to prepare
-- [.NET Framework 4.8.1 Developer Pack](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net481)
+- **Visual Studio 2019/2022** or **Rider** with C# support
+- **.NET Framework 4.8.1**
+- **Space Engineers** (Client and/or Dedicated Server)
+- **NuGet Package Manager**
 
-## Create your plugin project
+## Initial Setup
 
-1. Click on **Use this template** (top right corner on GitHub) and follow the wizard to create your repository
-2. Clone your repository to have a local working copy
-3. Run `setup.py`, enter the name of your plugin project in `CapitalizedWords` format
-4. Let `setup.py` auto-detect your install locations or fill them in manually
-5. Open the solution in Visual Studio or Rider
-6. Make a test build, it should deploy the resulting files to their respective target folders (see them in the build log)
-7. Test that the empty plugin can be enabled in Plugin Loader (client), Torch Server's UI and the Dedicated Server's UI
-9. Replace the contents of this file with the description of your plugin
-10. Follow the TODO comments in the source code
-11. Look into the source code of other plugins for examples on how to patch the game
+### 1. Clone and Configure Paths
 
-You may find the source code of these plugins inspirational:
-- [Performance Improvements](https://github.com/viktor-ferenczi/performance-improvements)
-- [Multigrid Projector](https://github.com/viktor-ferenczi/multigrid-projector)
-- [Toolbar Manager](https://github.com/viktor-ferenczi/toolbar-manager)
+1. Clone this repository to your development machine
+2. **IMPORTANT**: Edit `Directory.Build.props` to match your Space Engineers installation paths:
 
-In case of questions please feel free to ask the SE plugin developer community on the
-[Plugin Loader](https://discord.gg/6ETGRU3CzR) or the [Torch](https://discord.gg/xNFpHM6V8Q)
-Discord server in their relevant text channels. They also have dedicated channels for
-plugin ideas, should you look for a new one.
+```xml
+<Project>
+  <PropertyGroup>
+    <!-- Update these paths to match your installation -->
+    <Bin64>C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64</Bin64>
+    <Dedicated64>C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64</Dedicated64>
+    <Torch>C:\Path\To\Your\Torch\Installation</Torch>
+  </PropertyGroup>
+</Project>
+```
 
-_Good luck!_
+### 2. Manual Assembly References
 
-## Remarks
+⚠️ **CRITICAL**: This project requires manual assembly setup as it doesn't include automated dependency resolution.
 
-### Plugin configuration
+You need to ensure all referenced assemblies exist in your Space Engineers installation directories:
 
-You can have a nice configuration dialog with little effort in the game client.
-Customize the `Config` class in the `ClientPlugin` project, just follow the examples.
-It supports many different data types, including key binding. Once you have more
-options than can fit on the screen the dialog will have a vertical scrollbar.
+#### Required Game Assemblies (from Bin64/DedicatedServer64):
+- All VRage.* assemblies
+- All Sandbox.* assemblies  
+- All SpaceEngineers.* assemblies
+- System.* runtime assemblies
+- Third-party dependencies (HavokWrapper, NLog, ProtoBuf.Net, etc.)
 
-![Example config dialog](Doc/ConfigDialogExample.png "Example config dialog")
+#### NuGet Dependencies:
+The following packages are managed via NuGet:
+- `Lib.Harmony` (2.3.3) - For runtime patching
+- `Newtonsoft.Json` (13.0.2) - For JSON serialization
 
-The server plugin configuration works differently, please see the `Config` folder
-of the `Shared` project for that. Torch plugins also have a XAML descriptor for
-their configuration. The client side `Config` class is not integrated with the
-server side configuration, currently.
+### 3. Build Configuration
 
-### Conditional compilation
+1. Open `Code_tester.sln` in Visual Studio
+2. Ensure all assembly references resolve correctly
+3. Build the solution in **Debug** or **Release** mode
+4. The deployment scripts will automatically copy built assemblies to the appropriate plugin directories
 
-- DedicatedPlugin defines `DEDICATED`, TorchPlugin defines `TORCH`.
-  You can use those names for conditional compilation by `#if` blocks in the Shared project.
-  For example if you want your code to compile for client and dedicated server plugins, but
-  not for the Torch plugin, then put it into a `#if !TORCH` ... `#endif` block.
+## Development Guide
 
-### Shared project
+### Creating Your Plugin
 
-- Put any code you can share between the plugin projects into the Shared project.
-  Try to keep the redundancy at the minimum.
+1. **Rename the Project**: Update assembly names, namespaces, and plugin names throughout the codebase
+2. **Configure Settings**: Modify `Config.cs` files to define your plugin's configuration options
+3. **Implement Features**: Add your plugin logic in the `CustomUpdate()` methods
+4. **Add Patches**: Create Harmony patches in the `Shared/Patches/` directory
 
-- The DLLs required by your Shared code need to be added as a dependency to all the projects,
-  even if some of the code is not used by one of the projects.
+### Configuration System
 
-- You can delete the projects you don't need. If you want only a single project,
-  then move over what is in the Shared one, then you can delete Shared.
+The plugin uses a sophisticated configuration system with automatic UI generation:
 
-### Torch plugin
+```csharp
+[Checkbox(description: "Enable this feature")]
+public bool FeatureEnabled { get; set; } = true;
 
-- For Torch plugins see also the official
-  [Torch Plugin Template](https://torchapi.com/wiki/index.php/Torch_Plugin_Template),
-  it has some additional information in its `README.txt` file.
+[Slider(0f, 100f, 1f, SliderAttribute.SliderType.Float)]
+public float SomeValue { get; set; } = 50f;
 
-- If you don't need the config UI in Torch for your plugin, then remove the IWpfPlugin
-  from the Plugin class and the `xaml` and `xaml.cs` files. Also remove the now unused
-  `GetControl` method.
+[Dropdown(description: "Select an option")]
+public MyEnum SelectedOption { get; set; } = MyEnum.Default;
+```
 
-- While you can use HarmonyLib for patching in Torch plugins, Torch has its own patching
-  mechanism, which is more compatible with other plugins, but less convenient to use.
-  If you want to remove Harmony from the Torch plugin, then search for USE_HARMONY in all
-  files, which will show you where to make changes. Also remove Lib.Harmony from the
-  TorchPlugin project's NuGet package dependencies. Please note then in this case you
-  must also remove all uses of Harmony from your Torch plugin code.
+### Harmony Patching
 
-### How to prevent the potential crash after game updates
+Example of a method prefix patch:
+```csharp
+[HarmonyPrefix]
+[HarmonyPatch(typeof(TargetClass), "MethodName")]
+[EnsureCode("12345678")] // Hash verification
+public static bool MethodPrefix()
+{
+    // Your patch logic here
+    return true; // Continue to original method
+}
+```
 
-Please use the `EnsureCode` attribute on patch methods to safely skip loading the plugin
-with an error logged should the code in any of the methods patched would change as part of
-a game update. It is a good way to prevent blaming crashes on your plugin after game updates,
-so your plugin can remain safely enabled (but effectively disabled) until you have a chance
-to release an update for compatibility with the new game version. Please see the examples in
-the `Shared/Patches` folder on how to use this attribute.
+Example of a transpiler patch:
+```csharp
+[HarmonyTranspiler]
+[HarmonyPatch(typeof(TargetClass), "MethodName")]
+[EnsureCode("87654321")]
+private static IEnumerable<CodeInstruction> MethodTranspiler(IEnumerable<CodeInstruction> instructions)
+{
+    var il = instructions.ToList();
+    il.RecordOriginalCode();
+    
+    // Modify IL code here
+    
+    il.RecordPatchedCode();
+    return il;
+}
+```
 
-The hexadecimal hash code is logged in case of a mismatch, so you can read them from the logs
-for any new method you patch, just leave the string initially empty in the `EnsureCode`
-attribute, then replace with the value from the error log line after you run your plugin
-with the patch for the first time.
+### Code Verification
 
-On Proton (Linux) this check tends to cause issues, therefore there is a configuration flag
-to turn it OFF. Setting the `SE_PLUGIN_DISABLE_METHOD_VERIFICATION` environment variable to
-any value on the player's host also disables game code verification.
+The `EnsureCode` attribute verifies that game methods haven't changed unexpectedly:
+- Calculates hash of target method's IL code
+- Compares against known-good hashes
+- Prevents plugin from loading if verification fails
+- Essential for maintaining compatibility across game updates
+
+## Building and Deployment
+
+### Automatic Deployment
+
+The project includes automatic deployment via post-build events:
+
+1. **Build** the solution
+2. **Deploy scripts** automatically copy assemblies to:
+   - `{GamePath}\Bin64\Plugins\Local\` (Client)
+   - `{DedicatedPath}\DedicatedServer64\Plugins\Local\` (Server)
+
+### Manual Deployment
+
+If automatic deployment fails:
+
+1. Copy `ClientPlugin\bin\{Configuration}\Code_tester.dll` to `{GamePath}\Bin64\Plugins\Local\`
+2. Copy `DedicatedPlugin\bin\{Configuration}\Code_tester.dll` to `{DedicatedPath}\DedicatedServer64\Plugins\Local\`
+
+## Testing and Debugging
+
+### Client Testing
+1. Launch Space Engineers
+2. Check logs in `%AppData%\SpaceEngineers\Logs\`
+3. Access plugin settings via the mod menu (if UI is implemented)
+
+### Server Testing
+1. Launch dedicated server
+2. Check server logs for plugin loading messages
+3. Monitor plugin behavior during gameplay
 
 ### Debugging
+- Use `#if DEBUG` blocks for debug-only code
+- The template includes debugger attachment support
+- IL code recording helps with transpiler development
 
-- Always use a debug build if you want to set breakpoints and see variable values.
-- A debug build defines `DEBUG`, so you can add conditional code in `#if DEBUG` blocks.
-- While debugging a specific target unload the other two. It prevents the IDE to be confused.
-- If breakpoints do not "stick" or do not work, then make sure that:
-  - Other projects are unloaded, only the debugged one and Shared are loaded.
-  - Debugger is attached to the running process.
-  - You are debugging the code which is running (no code changes made since the build).
-- Transpiler patches will write a `harmony.log.txt` file to your `Desktop` while running `Debug`
-  builds. Never release a debug build to your users, because that would litter their desktop
-  as well.
-- To debug transpiler changes to the IL code it is most practical to generate the files
-  of the method's IL code before and after the change made, so you can just diff them.
-  Please see the transpiler example under the `Shared/Patches` folder for the details.
+## Common Issues and Solutions
 
-### Troubleshooting
+### Assembly Reference Errors
+- Verify all game installation paths in `Directory.Build.props`
+- Ensure Space Engineers is up to date
+- Check that all referenced assemblies exist in the specified directories
 
-- If the IDE looks confused, then restarting it and the debugged game usually works.
-- If the restart did not work, then try to delete caches used by your IDE and restart.
-- If your build cannot deploy (just runs in a loop), then something locks the DLL file.
-- Look for running game processes (maybe stuck running in the background) and kill them.
+### Patch Failures
+- Update `EnsureCode` hashes after game updates
+- Verify target methods still exist with expected signatures
+- Check compatibility with other installed plugins
 
-### Release
+### Deployment Issues
+- Run Visual Studio as Administrator if file access is denied
+- Manually create plugin directories if they don't exist
+- Check that game/server processes aren't locking the DLL files
 
-- Always make your final release from a RELEASE build. (More optimized, removes debug code.)
-- Always test your RELEASE build before publishing. Sometimes is behaves differently.
-- In case of client plugins the Plugin Loader compiles your code, watch out for differences.
+## Advanced Features
 
-### Communication
+### Settings UI Framework
+The project includes a complete UI generation system that creates settings dialogs from configuration properties using attributes.
 
-- In your documentation always include how players or server admins should report bugs.
-- Try to be reachable and respond on a timely manner over your communication channels.
-- Be open for constructive critics.
+### Code Change Detection
+Runtime verification system that detects when game code has changed, preventing crashes from outdated patches.
 
-### Abandoning your project
+### Multi-Environment Support
+Single codebase that compiles to different targets (Client/Dedicated) using conditional compilation.
 
-- Always consider finding a new maintainer, ask around at least once.
-- If you ever abandon the project, then make it clear on its GitHub page.
-- Abandoned projects should be made hidden on PluginHub and Torch's plugin list.
-- Keep the code available on GitHub, so it can be forked and continued by others.
+### Transpiler Helpers
+Utility methods for common IL manipulation tasks in transpiler patches.
+
+## Contributing
+
+When contributing to this template:
+
+1. Follow the existing code style and patterns
+2. Add appropriate documentation for new features
+3. Include examples for complex functionality
+4. Test changes across all supported environments
+
+## License
+
+This project is provided as a template for Space Engineers plugin development. Modify and use as needed for your own plugins.
+
+## References
+
+- [Space Engineers Modding Guide](https://github.com/KeenSoftwareHouse/SpaceEngineers)
+- [Harmony Patching Documentation](https://harmony.pardeike.net/)
+- [Example Performance Improvements](https://github.com/viktor-ferenczi/performance-improvements)
+
+---
+
+**Note**: This template requires manual setup of assembly references as it doesn't include automated dependency management. Ensure all required Space Engineers assemblies are available in your installation directories before building.
